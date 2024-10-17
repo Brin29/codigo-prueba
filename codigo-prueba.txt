@@ -1,0 +1,174 @@
+
+
+<dependency>
+    <groupId>com.mercadopago</groupId>
+    <artifactId>sdk-java</artifactId>
+    <version>2.1.7</version>
+</dependency>
+
+
+
+import com.mercadopago.MercadoPagoConfig;
+
+public class MyApplication {
+    public static void main(String[] args) {
+        MercadoPagoConfig.setAccessToken("PROD_ACCESS_TOKEN");
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+
+
+java
+Copiar código
+import com.mercadopago.client.PreferenceClient;
+import com.mercadopago.resources.Preference;
+import com.mercadopago.resources.PreferenceItemRequest;
+import com.mercadopago.resources.PreferenceRequest;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class PaymentService {
+
+    public Preference createPreference() {
+        // Crear un item
+        PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
+                .id("1234")
+                .title("Games")
+                .description("PS5")
+                .pictureUrl("http://picture.com/PS5")
+                .categoryId("games")
+                .quantity(2)
+                .currencyId("BRL")
+                .unitPrice(new BigDecimal("4000")) // Debe ser entero
+                .build();
+
+        List<PreferenceItemRequest> items = new ArrayList<>();
+        items.add(itemRequest);
+
+        // Crear la preferencia
+        PreferenceRequest preferenceRequest = PreferenceRequest.builder()
+                .items(items)
+                .build();
+
+        PreferenceClient client = new PreferenceClient();
+        return client.create(preferenceRequest);
+    }
+}
+
+java
+Copiar código
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    @GetMapping("/create-preference")
+    public Preference createPreference() {
+        return paymentService.createPreference();
+    }
+}
+
+
+
+----------------------------------------------------------------------------------------------
+
+import com.mercadopago.client.PreferenceClient;
+import com.mercadopago.resources.Preference;
+import com.mercadopago.resources.PreferenceItemRequest;
+import com.mercadopago.resources.PreferenceRequest;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class PaymentService {
+
+    public Preference createPreference(String title, String description, String pictureUrl, String categoryId, int quantity, String currencyId, BigDecimal unitPrice) {
+        // Crear un item
+        PreferenceItemRequest itemRequest = PreferenceItemRequest.builder()
+                .id("1234")
+                .title(title)
+                .description(description)
+                .pictureUrl(pictureUrl)
+                .categoryId(categoryId)
+                .quantity(quantity)
+                .currencyId(currencyId)
+                .unitPrice(unitPrice)
+                .build();
+
+        List<PreferenceItemRequest> items = new ArrayList<>();
+        items.add(itemRequest);
+
+        // Crear la preferencia
+        PreferenceRequest preferenceRequest = PreferenceRequest.builder()
+                .items(items)
+                .build();
+
+        PreferenceClient client = new PreferenceClient();
+        return client.create(preferenceRequest);
+    }
+}
+
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/payment")
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    @PostMapping("/create-preference")
+    public Preference createPreference(@RequestBody PreferenceDTO preferenceDTO) {
+        return paymentService.createPreference(
+                preferenceDTO.getTitle(),
+                preferenceDTO.getDescription(),
+                preferenceDTO.getPictureUrl(),
+                preferenceDTO.getCategoryId(),
+                preferenceDTO.getQuantity(),
+                preferenceDTO.getCurrencyId(),
+                preferenceDTO.getUnitPrice()
+        );
+    }
+}
+
+public class PreferenceDTO {
+    private String title;
+    private String description;
+    private String pictureUrl;
+    private String categoryId;
+    private int quantity;
+    private String currencyId;
+    private BigDecimal unitPrice;
+
+    // Getters y Setters
+    // ...
+}
+
+
+json
+Copiar código
+{
+    "title": "Games",
+    "description": "PS5",
+    "pictureUrl": "http://picture.com/PS5",
+    "categoryId": "games",
+    "quantity": 2,
+    "currencyId": "BRL",
+    "unitPrice": 4000
+}
